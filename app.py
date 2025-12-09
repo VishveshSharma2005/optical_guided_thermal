@@ -586,34 +586,4 @@ if st.button("Run Super-Resolution", use_container_width=True):
 
     st.divider()
 
-    # ========= Image Info =========
-    st.markdown("<div class='section-title'>Image Information</div>", unsafe_allow_html=True)
-    
-    info_col1, info_col2, info_col3 = st.columns(3)
-    
-    with info_col1:
-        st.markdown("""
-        <div class='metric-card'>
-            <div class='metric-label'>LR Thermal Size</div>
-            <div class='metric-value'>{} x {}</div>
-        </div>
-        """.format(lr_thermal.shape[1], lr_thermal.shape[2]), unsafe_allow_html=True)
-    
-    with info_col2:
-        st.markdown("""
-        <div class='metric-card'>
-            <div class='metric-label'>HR Optical Size</div>
-            <div class='metric-value'>{} x {}</div>
-        </div>
-        """.format(hr_rgb.shape[1], hr_rgb.shape[2]), unsafe_allow_html=True)
-    
-    with info_col3:
-        st.markdown("""
-        <div class='metric-card'>
-            <div class='metric-label'>SR Thermal Size</div>
-            <div class='metric-value'>{} x {}</div>
-        </div>
-        """.format(sr_thermal.shape[0], sr_thermal.shape[1]), unsafe_allow_html=True)
-
-    st.divider()
-    st.info("Processing complete! You can now try with different images.")
+   
