@@ -11,8 +11,8 @@ import math
 from typing import Optional
 import io
 import rasterio
-from rasterio.enums import Resampling as RioResampling
-from rasterio.warp import reproject
+import gdown
+from pathlib import Path
 
 # =========================
 # Page Configuration
@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling and larger images
+# Custom CSS for better styling
 st.markdown('''
     <style>
         .main {
@@ -32,12 +32,6 @@ st.markdown('''
         .stImage {
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin: 10px 0;
-        }
-        .image-container {
-            background-color: #f0f2f6;
-            padding: 15px;
-            border-radius: 8px;
             margin: 10px 0;
         }
         .metric-card {
@@ -184,7 +178,6 @@ class DualEDSRPlus(nn.Module):
 
         self.convOut = nn.Conv2d(n_feats, 1, kernel_size=3, padding=1)
 
-        # Init
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, a=0, mode="fan_in", nonlinearity="relu")
@@ -249,24 +242,70 @@ def compute_metrics(pred: np.ndarray, target: np.ndarray):
 
 
 # =========================
-# Model loading
+# Model loading (AUTO DOWNLOAD)
 # =========================
 @st.cache_resource
-def load_model(model_path: str = "models/hls_ssl4eo_best.pth"):
+def load_model(google_drive_id: str = None):
+    """
+    Load model from Google Drive if not present locally.
+    
+    Args:
+        google_drive_id: Google Drive file ID of the .pth model
+        
+    Example:
+        To get file ID from Google Drive URL:
+        https://drive.google.com/file/d/1A2B3C4D5E6F7G8H9I0J/view?usp=sharing
+        ID is: 1A2B3C4D5E6F7G8H9I0J
+    """
+    
+    # Create models directory if it doesn't exist
+    os.makedirs("models", exist_ok=True)
+    
+    model_path = "models/hls_ssl4eo_best.pth"
+    
+    # Download from Google Drive if file doesn't exist
     if not os.path.exists(model_path):
-        st.error(f"Model checkpoint not found at {model_path}. Please train the model first.")
+        if google_drive_id is None:
+            st.error("""
+            Model checkpoint not found!
+            
+            To fix this:
+            1. Upload your .pth file to Google Drive
+            2. Share the file (right-click > Share > Get link > Copy ID)
+            3. Add the Google Drive ID to the code:
+               - Find line: model = load_model(google_drive_id="YOUR_ID_HERE")
+               - Replace YOUR_ID_HERE with your actual file ID
+            """)
+            return None
+        
+        try:
+            st.info(f"Downloading model from Google Drive... This may take a few minutes.")
+            gdown.download(
+                f"https://drive.google.com/uc?id={google_drive_id}",
+                model_path,
+                quiet=False
+            )
+            st.success("Model downloaded successfully!")
+        except Exception as e:
+            st.error(f"Failed to download model: {str(e)}")
+            return None
+    
+    # Load the model
+    try:
+        model = DualEDSRPlus(n_resgroups=4, n_rcab=4, n_feats=64, upscale=2)
+        ckpt = torch.load(model_path, map_location='cpu')
+        model.load_state_dict(ckpt["model_state"])
+        model.eval()
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
         return None
-    model = DualEDSRPlus(n_resgroups=4, n_rcab=4, n_feats=64, upscale=2)
-    ckpt = torch.load(model_path, map_location='cpu')
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    return model
 
 
 # =========================
 # TIFF processing
 # =========================
-def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = False, reference_profile=None):
+def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = False):
     if uploaded_file is not None:
         temp_path = f"temp_{uploaded_file.name}"
         with open(temp_path, "wb") as f:
@@ -276,7 +315,7 @@ def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = 
             with rasterio.open(temp_path) as src:
                 if is_rgb:
                     if src.count >= 3:
-                        data = src.read([1, 2, 3])  # (3, H, W)
+                        data = src.read([1, 2, 3])
                         img_array = np.stack([norm_np(data[c]) for c in range(3)], axis=0)
                     else:
                         st.warning("RGB TIFF should have at least 3 bands.")
@@ -284,14 +323,11 @@ def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = 
 
                 elif is_thermal:
                     if src.count >= 1:
-                        data = src.read(1)  # (H, W)
-                        img_array = norm_np(data)[np.newaxis, :, :]  # (1, H, W)
+                        data = src.read(1)
+                        img_array = norm_np(data)[np.newaxis, :, :]
                     else:
                         st.warning("Thermal TIFF should have at least 1 band.")
                         return None
-
-                if reference_profile is not None:
-                    pass
 
                 os.remove(temp_path)
                 return img_array
@@ -305,24 +341,21 @@ def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = 
 
 
 # =========================
-# Enhanced Display helpers
+# Display helpers
 # =========================
 def display_rgb_image(img: np.ndarray, title: str):
-    """Display RGB image with title and large size."""
     st.markdown(f"**{title}**")
     display_img = np.transpose(np.clip(img, 0, 1), (1, 2, 0))
     st.image(display_img, use_column_width=True, clamp=True, channels='RGB')
 
 
 def display_thermal_gray(img: np.ndarray, title: str):
-    """Display thermal grayscale image with title and large size."""
     st.markdown(f"**{title}**")
     gray = np.clip(img.squeeze(), 0, 1)
     st.image(gray, use_column_width=True, clamp=True)
 
 
 def display_thermal_colored(img: np.ndarray, title: str, cmap_name: str):
-    """Display thermal image with colormap and large size."""
     st.markdown(f"**{title}**")
     base = np.clip(img.squeeze(), 0, 1)
     cmap = cm.get_cmap(cmap_name)
@@ -331,7 +364,6 @@ def display_thermal_colored(img: np.ndarray, title: str, cmap_name: str):
 
 
 def display_metrics_card(psnr_val, ssim_val, rmse_val):
-    """Display metrics in an attractive card layout."""
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -352,7 +384,7 @@ st.title("HLS SSL4EO Super-Resolution Demo")
 st.markdown("""
 <div style='background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
     <b>Upload</b> HR Optical (3-band TIFF), LR Thermal (1-band TIFF), and optionally GT HR Thermal (1-band TIFF).
-    <br><b>Note:</b> Assumes upscale factor=2 with aligned grids.
+    <br><b>Note:</b> Model auto-downloads from Google Drive on first run.
 </div>
 """, unsafe_allow_html=True)
 
@@ -369,15 +401,69 @@ with st.sidebar:
     )
     
     st.markdown("---")
-    st.header("Instructions")
-    st.markdown("""
-    1. **HR Optical**: 3-band TIFF (RGB) at high resolution
-    2. **LR Thermal**: 1-band thermal TIFF at half resolution
-    3. **GT HR Thermal** (Optional): Ground truth thermal image
-    4. All images should be **aligned** (same spatial extent)
-    5. Model path: `models/hls_ssl4eo_best.pth`
-    6. Requires: `rasterio` library
-    """)
+    st.header("Setup Instructions")
+    
+    with st.expander("How to use Google Drive for Model", expanded=False):
+        st.markdown("""
+        **Step 1: Get your model file**
+        - Ensure you have `hls_ssl4eo_best.pth` ready
+        
+        **Step 2: Upload to Google Drive**
+        - Go to Google Drive
+        - Click "New" → "File upload"
+        - Select your `.pth` file
+        - Upload it
+        
+        **Step 3: Get shareable link**
+        - Right-click the file
+        - Click "Share"
+        - Click "Change to anyone with the link"
+        - Copy the link
+        
+        **Step 4: Extract the file ID**
+        From URL: `https://drive.google.com/file/d/YOUR_ID_HERE/view`
+        Copy: `YOUR_ID_HERE`
+        
+        **Step 5: Update the code**
+        Find this line in app.py (around line 450):
+        ```python
+        model = load_model(google_drive_id="PASTE_YOUR_ID_HERE")
+        ```
+        Replace `PASTE_YOUR_ID_HERE` with your actual ID
+        """)
+    
+    st.markdown("---")
+    st.header("Other Upload Options")
+    
+    with st.expander("Alternative: Hugging Face Hub", expanded=False):
+        st.markdown("""
+        Use Hugging Face Hub instead of Google Drive:
+        
+        ```python
+        from huggingface_hub import hf_hub_download
+        
+        model_path = hf_hub_download(
+            repo_id="your-username/hls-ssl4eo",
+            filename="hls_ssl4eo_best.pth"
+        )
+        ```
+        """)
+    
+    with st.expander("Alternative: AWS S3", expanded=False):
+        st.markdown("""
+        Use AWS S3 for model storage:
+        
+        ```python
+        import boto3
+        
+        s3 = boto3.client('s3')
+        s3.download_file(
+            'bucket-name',
+            'path/to/model.pth',
+            'models/hls_ssl4eo_best.pth'
+        )
+        ```
+        """)
 
 # Main content area - File uploaders
 st.markdown("<div class='section-title'>Input Files</div>", unsafe_allow_html=True)
@@ -409,8 +495,11 @@ with col_gt:
         key='gt_thermal'
     )
 
-# Model loading
-model = load_model()
+# CRITICAL: Replace with your Google Drive file ID
+# Instructions: See sidebar "How to use Google Drive for Model"
+GOOGLE_DRIVE_MODEL_ID = "PASTE_YOUR_ID_HERE"  # Replace this!
+
+model = load_model(google_drive_id=GOOGLE_DRIVE_MODEL_ID)
 if model is None:
     st.stop()
 
@@ -442,7 +531,7 @@ if st.button("Run Super-Resolution", use_container_width=True):
 
     progress_bar.progress(40)
 
-    # Ensure shapes are compatible (upscale=2)
+    # Ensure shapes are compatible
     lr_h, lr_w = lr_thermal.shape[1:]
     hr_h, hr_w = hr_rgb.shape[1:]
 
@@ -475,7 +564,6 @@ if st.button("Run Super-Resolution", use_container_width=True):
     status_text.text("Processing complete!")
     progress_bar.progress(100)
 
-    # Clear progress indicators
     progress_bar.empty()
     status_text.empty()
 
