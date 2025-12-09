@@ -34,12 +34,6 @@ st.markdown('''
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin: 10px 0;
         }
-        .image-container {
-            background-color: #f0f2f6;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
         .metric-card {
             background-color: #e3f2fd;
             padding: 20px;
@@ -66,6 +60,17 @@ st.markdown('''
             background-color: #f0f2f6;
             padding: 15px;
             border-radius: 8px;
+        }
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1f77b4;
+            margin: 10px 0;
+        }
+        .metric-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
         }
     </style>
 ''', unsafe_allow_html=True)
@@ -249,66 +254,37 @@ def compute_metrics(pred: np.ndarray, target: np.ndarray):
 
 
 # =========================
-# Model loading - FIXED FOR GITHUB
+# Model loading - FIXED VERSION
 # =========================
 @st.cache_resource
 def load_model(model_path: str = "models/hls_ssl4eo_best.pth"):
-    """
-    Load model with LFS pointer file detection.
-    GitHub LFS sometimes stores pointer files instead of actual files.
-    """
+    """Load model with proper error handling"""
     
     if not os.path.exists(model_path):
-        st.error(f"Model checkpoint not found at {model_path}. Please ensure the file exists in your repository.")
+        st.error(f"Model checkpoint not found at {model_path}. Please ensure the file exists.")
         return None
     
-    # Check if file is an LFS pointer (GitHub LFS issue)
+    # Check if file is valid
     try:
-        with open(model_path, 'r') as f:
-            first_line = f.readline()
-            if first_line.startswith('version https://git-lfs.github.com'):
-                st.error("""
-                ERROR: Git LFS pointer file detected instead of actual model!
-                
-                This happens when GitHub LFS isn't properly configured.
-                
-                SOLUTIONS:
-                1. **Best Solution - Remove from GitHub & Use Google Drive**:
-                   - Don't commit large .pth files to GitHub
-                   - Use provided auto-download solution from Google Drive
-                   - See documentation: SOLVE_MODEL_DOWNLOAD.md
-                
-                2. **If you want to keep in GitHub**:
-                   - Install Git LFS: `git lfs install`
-                   - Track .pth files: `git lfs track "*.pth"`
-                   - Re-commit: `git add models/ && git commit && git push`
-                   
-                3. **Temporary Fix - Skip .gitattributes check**:
-                   - Remove: `*.pth filter=lfs diff=lfs merge=lfs -text` from .gitattributes
-                   - Run: `git lfs untrack "*.pth"`
-                   - Re-commit and push
-                """)
-                return None
-    except:
-        pass  # Binary file, can read as torch model
-    
-    # Try to load the model
-    try:
+        file_size = os.path.getsize(model_path)
+        if file_size < 1000:  # Less than 1KB - likely a pointer file
+            st.error("Model file appears to be corrupted or a Git LFS pointer file. Please use Git LFS or Google Drive option.")
+            return None
+        
         model = DualEDSRPlus(n_resgroups=4, n_rcab=4, n_feats=64, upscale=2)
         ckpt = torch.load(model_path, map_location='cpu')
         model.load_state_dict(ckpt["model_state"])
         model.eval()
-        st.success("Model loaded successfully!")
         return model
     except Exception as e:
-        st.error(f"Failed to load model: {str(e)}\nMake sure the .pth file is a valid PyTorch checkpoint.")
+        st.error(f"Error loading model: {str(e)}")
         return None
 
 
 # =========================
 # TIFF processing
 # =========================
-def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = False, reference_profile=None):
+def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = False):
     if uploaded_file is not None:
         temp_path = f"temp_{uploaded_file.name}"
         with open(temp_path, "wb") as f:
@@ -318,7 +294,7 @@ def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = 
             with rasterio.open(temp_path) as src:
                 if is_rgb:
                     if src.count >= 3:
-                        data = src.read([1, 2, 3])  # (3, H, W)
+                        data = src.read([1, 2, 3])
                         img_array = np.stack([norm_np(data[c]) for c in range(3)], axis=0)
                     else:
                         st.warning("RGB TIFF should have at least 3 bands.")
@@ -326,14 +302,11 @@ def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = 
 
                 elif is_thermal:
                     if src.count >= 1:
-                        data = src.read(1)  # (H, W)
-                        img_array = norm_np(data)[np.newaxis, :, :]  # (1, H, W)
+                        data = src.read(1)
+                        img_array = norm_np(data)[np.newaxis, :, :]
                     else:
                         st.warning("Thermal TIFF should have at least 1 band.")
                         return None
-
-                if reference_profile is not None:
-                    pass
 
                 os.remove(temp_path)
                 return img_array
@@ -347,7 +320,7 @@ def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = 
 
 
 # =========================
-# Enhanced Display helpers
+# Display helpers - FIXED VERSION
 # =========================
 def display_rgb_image(img: np.ndarray, title: str):
     """Display RGB image with title and large size."""
@@ -373,21 +346,37 @@ def display_thermal_colored(img: np.ndarray, title: str, cmap_name: str):
 
 
 def display_metrics_card(psnr_val, ssim_val, rmse_val):
-    """Display metrics in an attractive card layout."""
+    """Display metrics in an attractive card layout - FIXED"""
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("PSNR (dB)", f"{psnr_val:.2f}")
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>PSNR (dB)</div>
+            <div class='metric-value'>{:.2f}</div>
+        </div>
+        """.format(psnr_val), unsafe_allow_html=True)
     
     with col2:
-        st.metric("SSIM", f"{ssim_val:.4f}")
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>SSIM</div>
+            <div class='metric-value'>{:.4f}</div>
+        </div>
+        """.format(ssim_val), unsafe_allow_html=True)
     
     with col3:
-        st.metric("RMSE", f"{rmse_val:.4f}")
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>RMSE</div>
+            <div class='metric-value'>{:.4f}</div>
+        </div>
+        """.format(rmse_val), unsafe_allow_html=True)
 
 
 # =========================
-# Streamlit App
+# Streamlit App - MAIN
 # =========================
 st.title("HLS SSL4EO Super-Resolution Demo")
 
@@ -403,7 +392,6 @@ with st.sidebar:
     st.header("Configuration")
     st.markdown("---")
     
-    # Colormap selector
     cmap = st.selectbox(
         "Thermal Colormap",
         ['hot', 'cool', 'viridis', 'plasma', 'inferno', 'gray'],
@@ -574,13 +562,36 @@ if st.button("Run Super-Resolution", use_container_width=True):
     else:
         st.info("Upload GT thermal image to compute metrics.")
 
+    st.divider()
+
     # ========= Image Info =========
     st.markdown("<div class='section-title'>Image Information</div>", unsafe_allow_html=True)
     
     info_col1, info_col2, info_col3 = st.columns(3)
+    
     with info_col1:
-        st.metric("LR Thermal Size", f"{lr_thermal.shape[1]} x {lr_thermal.shape[2]}")
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>LR Thermal Size</div>
+            <div class='metric-value'>{} x {}</div>
+        </div>
+        """.format(lr_thermal.shape[1], lr_thermal.shape[2]), unsafe_allow_html=True)
+    
     with info_col2:
-        st.metric("HR Optical Size", f"{hr_rgb.shape[1]} x {hr_rgb.shape[2]}")
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>HR Optical Size</div>
+            <div class='metric-value'>{} x {}</div>
+        </div>
+        """.format(hr_rgb.shape[1], hr_rgb.shape[2]), unsafe_allow_html=True)
+    
     with info_col3:
-        st.metric("SR Thermal Size", f"{sr_thermal.shape[0]} x {sr_thermal.shape[1]}")
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>SR Thermal Size</div>
+            <div class='metric-value'>{} x {}</div>
+        </div>
+        """.format(sr_thermal.shape[0], sr_thermal.shape[1]), unsafe_allow_html=True)
+
+    st.divider()
+    st.info("✅ Processing complete! You can now try with different images.")
