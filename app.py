@@ -249,18 +249,60 @@ def compute_metrics(pred: np.ndarray, target: np.ndarray):
 
 
 # =========================
-# Model loading
+# Model loading - FIXED FOR GITHUB
 # =========================
 @st.cache_resource
 def load_model(model_path: str = "models/hls_ssl4eo_best.pth"):
+    """
+    Load model with LFS pointer file detection.
+    GitHub LFS sometimes stores pointer files instead of actual files.
+    """
+    
     if not os.path.exists(model_path):
-        st.error(f"Model checkpoint not found at {model_path}. Please train the model first.")
+        st.error(f"Model checkpoint not found at {model_path}. Please ensure the file exists in your repository.")
         return None
-    model = DualEDSRPlus(n_resgroups=4, n_rcab=4, n_feats=64, upscale=2)
-    ckpt = torch.load(model_path, map_location='cpu')
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
-    return model
+    
+    # Check if file is an LFS pointer (GitHub LFS issue)
+    try:
+        with open(model_path, 'r') as f:
+            first_line = f.readline()
+            if first_line.startswith('version https://git-lfs.github.com'):
+                st.error("""
+                ERROR: Git LFS pointer file detected instead of actual model!
+                
+                This happens when GitHub LFS isn't properly configured.
+                
+                SOLUTIONS:
+                1. **Best Solution - Remove from GitHub & Use Google Drive**:
+                   - Don't commit large .pth files to GitHub
+                   - Use provided auto-download solution from Google Drive
+                   - See documentation: SOLVE_MODEL_DOWNLOAD.md
+                
+                2. **If you want to keep in GitHub**:
+                   - Install Git LFS: `git lfs install`
+                   - Track .pth files: `git lfs track "*.pth"`
+                   - Re-commit: `git add models/ && git commit && git push`
+                   
+                3. **Temporary Fix - Skip .gitattributes check**:
+                   - Remove: `*.pth filter=lfs diff=lfs merge=lfs -text` from .gitattributes
+                   - Run: `git lfs untrack "*.pth"`
+                   - Re-commit and push
+                """)
+                return None
+    except:
+        pass  # Binary file, can read as torch model
+    
+    # Try to load the model
+    try:
+        model = DualEDSRPlus(n_resgroups=4, n_rcab=4, n_feats=64, upscale=2)
+        ckpt = torch.load(model_path, map_location='cpu')
+        model.load_state_dict(ckpt["model_state"])
+        model.eval()
+        st.success("Model loaded successfully!")
+        return model
+    except Exception as e:
+        st.error(f"Failed to load model: {str(e)}\nMake sure the .pth file is a valid PyTorch checkpoint.")
+        return None
 
 
 # =========================
