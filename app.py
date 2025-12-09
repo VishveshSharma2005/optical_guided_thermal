@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for professional styling
+# Custom CSS for better styling and larger images
 st.markdown('''
     <style>
         .main {
@@ -36,29 +36,25 @@ st.markdown('''
         }
         .metric-card {
             background-color: #e3f2fd;
-            padding: 25px;
-            border-radius: 12px;
+            padding: 20px;
+            border-radius: 8px;
             text-align: center;
             margin: 10px 0;
-            border-left: 5px solid #1f77b4;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #1f77b4;
         }
         .section-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-top: 30px;
-            margin-bottom: 25px;
-            padding-bottom: 12px;
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
             border-bottom: 3px solid #1f77b4;
             color: #1f77b4;
-            letter-spacing: 0.5px;
         }
         h1 {
             text-align: center;
             color: #1f77b4;
             padding: 20px 0;
-            font-weight: 800;
-            letter-spacing: 1px;
         }
         .stMetric {
             background-color: #f0f2f6;
@@ -66,69 +62,15 @@ st.markdown('''
             border-radius: 8px;
         }
         .metric-value {
-            font-size: 32px;
-            font-weight: 900;
-            color: #0d47a1;
+            font-size: 28px;
+            font-weight: bold;
+            color: #1f77b4;
             margin: 10px 0;
-            letter-spacing: 0.3px;
         }
         .metric-label {
-            font-size: 15px;
-            color: #555;
-            margin-bottom: 8px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .info-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 15px;
-            line-height: 1.6;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-        .upload-section {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            border-left: 5px solid #2196F3;
-        }
-        .upload-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1f77b4;
-            margin-bottom: 12px;
-        }
-        .upload-description {
             font-size: 14px;
-            color: #333;
-            line-height: 1.7;
-            margin-bottom: 0;
-        }
-        .note-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: #d32f2f;
-            margin: 8px 0 0 0;
-        }
-        .success-box {
-            background-color: #c8e6c9;
-            border-left: 5px solid #4caf50;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            color: #2e7d32;
-            font-weight: 500;
-        }
-        .file-uploader-label {
-            font-size: 15px;
-            font-weight: 700;
-            color: #1f77b4;
-            margin-bottom: 8px;
+            color: #666;
+            margin-bottom: 5px;
         }
     </style>
 ''', unsafe_allow_html=True)
@@ -312,7 +254,7 @@ def compute_metrics(pred: np.ndarray, target: np.ndarray):
 
 
 # =========================
-# Model loading
+# Model loading - FIXED VERSION
 # =========================
 @st.cache_resource
 def load_model(model_path: str = "models/hls_ssl4eo_best.pth"):
@@ -378,7 +320,7 @@ def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = 
 
 
 # =========================
-# Display helpers
+# Display helpers - FIXED VERSION
 # =========================
 def display_rgb_image(img: np.ndarray, title: str):
     """Display RGB image with title and large size."""
@@ -404,7 +346,7 @@ def display_thermal_colored(img: np.ndarray, title: str, cmap_name: str):
 
 
 def display_metrics_card(psnr_val, ssim_val, rmse_val):
-    """Display metrics in professional bold card layout"""
+    """Display metrics in an attractive card layout - FIXED"""
     
     col1, col2, col3 = st.columns(3)
     
@@ -412,7 +354,7 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
         st.markdown("""
         <div class='metric-card'>
             <div class='metric-label'>PSNR (dB)</div>
-            <div class='metric-value'><b>{:.2f}</b></div>
+            <div class='metric-value'>{:.2f}</div>
         </div>
         """.format(psnr_val), unsafe_allow_html=True)
     
@@ -420,7 +362,7 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
         st.markdown("""
         <div class='metric-card'>
             <div class='metric-label'>SSIM</div>
-            <div class='metric-value'><b>{:.4f}</b></div>
+            <div class='metric-value'>{:.4f}</div>
         </div>
         """.format(ssim_val), unsafe_allow_html=True)
     
@@ -428,7 +370,7 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
         st.markdown("""
         <div class='metric-card'>
             <div class='metric-label'>RMSE</div>
-            <div class='metric-value'><b>{:.4f}</b></div>
+            <div class='metric-value'>{:.4f}</div>
         </div>
         """.format(rmse_val), unsafe_allow_html=True)
 
@@ -436,67 +378,18 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
 # =========================
 # Streamlit App - MAIN
 # =========================
-st.title("🛰️ HLS SSL4EO Super-Resolution Demo")
+st.title("HLS SSL4EO Super-Resolution Demo")
 
-# Professional Info Box
 st.markdown("""
-<div class='info-box'>
-    <b>📋 About This Application</b><br>
-    This tool performs thermal image super-resolution using deep learning. It combines high-resolution optical imagery with low-resolution thermal data to generate enhanced thermal images with 2x upsampling factor.
+<div style='background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+    <b>Upload</b> HR Optical (3-band TIFF), LR Thermal (1-band TIFF), and optionally GT HR Thermal (1-band TIFF).
+    <br><b>Note:</b> Assumes upscale factor=2 with aligned grids.
 </div>
 """, unsafe_allow_html=True)
 
-# Upload Section with Professional Styling
-st.markdown("<div class='section-title'>📁 Upload Input Files</div>", unsafe_allow_html=True)
-
-st.markdown("""
-<div class='upload-section'>
-    <div class='upload-title'>Input Requirements</div>
-    <div class='upload-description'>
-        • <b>HR Optical (3-band TIFF):</b> High-resolution RGB satellite or aerial image at full resolution<br>
-        • <b>LR Thermal (1-band TIFF):</b> Low-resolution thermal image at half the resolution of HR Optical<br>
-        • <b>GT HR Thermal (Optional):</b> Ground truth high-resolution thermal image for quality evaluation
-    </div>
-    <div class='note-text'>
-        ⚠️ Note: Assumes upscale factor=2 with aligned spatial grids. All images must cover the same geographic area.
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# File uploaders
-col_optical, col_thermal = st.columns(2)
-
-with col_optical:
-    st.markdown("<div class='file-uploader-label'>🖼️ HR Optical (3-band TIFF)</div>", unsafe_allow_html=True)
-    hr_optical_upload = st.file_uploader(
-        "Upload HR RGB Optical TIFF",
-        type=['tif', 'tiff'],
-        key='hr_optical',
-        label_visibility='collapsed'
-    )
-
-with col_thermal:
-    st.markdown("<div class='file-uploader-label'>🌡️ LR Thermal (1-band TIFF)</div>", unsafe_allow_html=True)
-    lr_thermal_upload = st.file_uploader(
-        "Upload LR Thermal TIFF",
-        type=['tif', 'tiff'],
-        key='lr_thermal',
-        label_visibility='collapsed'
-    )
-
-col_gt, _ = st.columns(2)
-with col_gt:
-    st.markdown("<div class='file-uploader-label'>📊 GT HR Thermal (Optional)</div>", unsafe_allow_html=True)
-    gt_thermal_upload = st.file_uploader(
-        "Upload GT HR Thermal TIFF",
-        type=['tif', 'tiff'],
-        key='gt_thermal',
-        label_visibility='collapsed'
-    )
-
-# Sidebar Configuration
+# Sidebar - Configuration
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.header("Configuration")
     st.markdown("---")
     
     cmap = st.selectbox(
@@ -506,22 +399,45 @@ with st.sidebar:
     )
     
     st.markdown("---")
-    st.header("📖 Instructions")
+    st.header("Instructions")
     st.markdown("""
-    **File Format Requirements:**
-    - TIFF format (.tif or .tiff)
-    - RGB: 3 bands
-    - Thermal: 1 band
-    
-    **Resolution Requirements:**
-    - HR Optical: Full resolution
-    - LR Thermal: Half resolution (2x upsampling)
-    - Example: If HR is 512×512, LR must be 256×256
-    
-    **Spatial Alignment:**
-    - All images must have same geographic extent
-    - No rotation or misalignment
+    1. **HR Optical**: 3-band TIFF (RGB) at high resolution
+    2. **LR Thermal**: 1-band thermal TIFF at half resolution
+    3. **GT HR Thermal** (Optional): Ground truth thermal image
+    4. All images should be **aligned** (same spatial extent)
+    5. Model path: `models/hls_ssl4eo_best.pth`
+    6. Requires: `rasterio` library
     """)
+
+# Main content area - File uploaders
+st.markdown("<div class='section-title'>Input Files</div>", unsafe_allow_html=True)
+
+col_optical, col_thermal = st.columns(2)
+
+with col_optical:
+    st.markdown("#### HR Optical (3-band TIFF)")
+    hr_optical_upload = st.file_uploader(
+        "Upload HR RGB Optical TIFF",
+        type=['tif', 'tiff'],
+        key='hr_optical'
+    )
+
+with col_thermal:
+    st.markdown("#### LR Thermal (1-band TIFF)")
+    lr_thermal_upload = st.file_uploader(
+        "Upload LR Thermal TIFF",
+        type=['tif', 'tiff'],
+        key='lr_thermal'
+    )
+
+col_gt, _ = st.columns(2)
+with col_gt:
+    st.markdown("#### GT HR Thermal (Optional, 1-band TIFF)")
+    gt_thermal_upload = st.file_uploader(
+        "Upload GT HR Thermal TIFF",
+        type=['tif', 'tiff'],
+        key='gt_thermal'
+    )
 
 # Model loading
 model = load_model()
@@ -533,9 +449,9 @@ model.to(DEVICE)
 
 # Run button
 st.markdown("---")
-if st.button("🚀 Run Super-Resolution", use_container_width=True):
+if st.button("Run Super-Resolution", use_container_width=True):
     if hr_optical_upload is None or lr_thermal_upload is None:
-        st.warning("⚠️ Please upload both HR Optical and LR Thermal TIFF files to proceed.")
+        st.warning("Please upload both HR Optical and LR Thermal TIFFs.")
         st.stop()
 
     # Progress indicators
@@ -543,7 +459,7 @@ if st.button("🚀 Run Super-Resolution", use_container_width=True):
     status_text = st.empty()
 
     # Process inputs
-    status_text.text("📖 Processing input files...")
+    status_text.text("Processing input files...")
     progress_bar.progress(20)
     
     hr_rgb = process_tiff_upload(hr_optical_upload, is_rgb=True)
@@ -551,7 +467,7 @@ if st.button("🚀 Run Super-Resolution", use_container_width=True):
     gt_thermal = process_tiff_upload(gt_thermal_upload, is_thermal=True) if gt_thermal_upload else None
 
     if hr_rgb is None or lr_thermal is None:
-        st.error("❌ Failed to process TIFF files. Please check file format and try again.")
+        st.error("Failed to process TIFFs.")
         st.stop()
 
     progress_bar.progress(40)
@@ -562,8 +478,8 @@ if st.button("🚀 Run Super-Resolution", use_container_width=True):
 
     if hr_h != 2 * lr_h or hr_w != 2 * lr_w:
         st.warning(
-            f"⚠️ Size mismatch: LR should be half HR size. "
-            f"LR: ({lr_h}×{lr_w}), HR: ({hr_h}×{hr_w}). Resizing for demo..."
+            f"Size mismatch detected: LR should be half HR size. "
+            f"LR: ({lr_h},{lr_w}), HR: ({hr_h},{hr_w}). Resizing LR for demo."
         )
         lr_torch = torch.from_numpy(lr_thermal).unsqueeze(0).float()
         lr_torch_resized = F.interpolate(
@@ -578,7 +494,7 @@ if st.button("🚀 Run Super-Resolution", use_container_width=True):
     progress_bar.progress(60)
 
     # Inference
-    status_text.text("🤖 Running super-resolution inference...")
+    status_text.text("Running super-resolution inference...")
     with torch.no_grad():
         lr_t = torch.from_numpy(lr_thermal).unsqueeze(0).to(DEVICE)
         hr_o = torch.from_numpy(hr_rgb).unsqueeze(0).to(DEVICE)
@@ -586,7 +502,7 @@ if st.button("🚀 Run Super-Resolution", use_container_width=True):
         sr_thermal = np.clip(sr_thermal, 0, 1)
 
     progress_bar.progress(80)
-    status_text.text("✅ Processing complete!")
+    status_text.text("Processing complete!")
     progress_bar.progress(100)
 
     # Clear progress indicators
@@ -594,31 +510,31 @@ if st.button("🚀 Run Super-Resolution", use_container_width=True):
     status_text.empty()
 
     # ========= RESULTS SECTION =========
-    st.markdown("<div class='section-title'>📊 Results - Grayscale Comparison</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Results - Grayscale Images</div>", unsafe_allow_html=True)
     
     if gt_thermal is not None:
         cols = st.columns(4)
         with cols[0]:
             display_rgb_image(hr_rgb, "HR Optical (RGB)")
         with cols[1]:
-            display_thermal_gray(lr_thermal[0], "LR Thermal")
+            display_thermal_gray(lr_thermal[0], "LR Thermal (Grayscale)")
         with cols[2]:
-            display_thermal_gray(sr_thermal, "SR Thermal")
+            display_thermal_gray(sr_thermal, "SR Thermal (Grayscale)")
         with cols[3]:
-            display_thermal_gray(gt_thermal[0], "GT HR Thermal")
+            display_thermal_gray(gt_thermal[0], "GT HR Thermal (Grayscale)")
     else:
         cols = st.columns(3)
         with cols[0]:
             display_rgb_image(hr_rgb, "HR Optical (RGB)")
         with cols[1]:
-            display_thermal_gray(lr_thermal[0], "LR Thermal")
+            display_thermal_gray(lr_thermal[0], "LR Thermal (Grayscale)")
         with cols[2]:
-            display_thermal_gray(sr_thermal, "SR Thermal")
+            display_thermal_gray(sr_thermal, "SR Thermal (Grayscale)")
 
     st.divider()
 
     # ========= Colored Comparison =========
-    st.markdown("<div class='section-title'>🌈 Results - Thermal with Colormap</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Results - Thermal Images with Colormap</div>", unsafe_allow_html=True)
 
     if gt_thermal is not None:
         cols = st.columns(3)
@@ -637,22 +553,45 @@ if st.button("🚀 Run Super-Resolution", use_container_width=True):
 
     st.divider()
 
-    # ========= Performance Metrics =========
+    # ========= Metrics =========
     if gt_thermal is not None:
-        st.markdown("<div class='section-title'>📈 Performance Metrics</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>Performance Metrics</div>", unsafe_allow_html=True)
         psnr_val, ssim_val, rmse_val = compute_metrics(sr_thermal, gt_thermal[0])
         display_metrics_card(psnr_val, ssim_val, rmse_val)
-        st.markdown("""
-        <div class='success-box'>
-            ✅ Metrics computed between Super-Resolution and Ground Truth!
-        </div>
-        """, unsafe_allow_html=True)
+        st.success("Metrics computed between SR and GT!")
     else:
-        st.info("💡 Upload ground truth thermal image to compute performance metrics (PSNR, SSIM, RMSE).")
+        st.info("Upload GT thermal image to compute metrics.")
 
     st.divider()
-    st.markdown("""
-    <div class='success-box'>
-        ✅ Processing complete! You can now try with different images.
-    </div>
-    """, unsafe_allow_html=True)
+
+    # ========= Image Info =========
+    st.markdown("<div class='section-title'>Image Information</div>", unsafe_allow_html=True)
+    
+    info_col1, info_col2, info_col3 = st.columns(3)
+    
+    with info_col1:
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>LR Thermal Size</div>
+            <div class='metric-value'>{} x {}</div>
+        </div>
+        """.format(lr_thermal.shape[1], lr_thermal.shape[2]), unsafe_allow_html=True)
+    
+    with info_col2:
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>HR Optical Size</div>
+            <div class='metric-value'>{} x {}</div>
+        </div>
+        """.format(hr_rgb.shape[1], hr_rgb.shape[2]), unsafe_allow_html=True)
+    
+    with info_col3:
+        st.markdown("""
+        <div class='metric-card'>
+            <div class='metric-label'>SR Thermal Size</div>
+            <div class='metric-value'>{} x {}</div>
+        </div>
+        """.format(sr_thermal.shape[0], sr_thermal.shape[1]), unsafe_allow_html=True)
+
+    st.divider()
+    st.info("✅ Processing complete! You can now try with different images.")
