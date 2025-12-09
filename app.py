@@ -278,6 +278,27 @@ def compute_metrics(pred: np.ndarray, target: np.ndarray):
     return psnr_val, ssim_val, rmse_val
 
 
+def save_tiff(data: np.ndarray, filename: str):
+    """Save numpy array as TIFF file in bytes"""
+    temp_path = f"temp_{filename}"
+    with rasterio.open(
+        temp_path,
+        'w',
+        driver='GTiff',
+        height=data.shape[0],
+        width=data.shape[1],
+        count=1,
+        dtype=data.dtype
+    ) as dst:
+        dst.write(data, 1)
+    
+    with open(temp_path, 'rb') as f:
+        file_bytes = f.read()
+    
+    os.remove(temp_path)
+    return file_bytes
+
+
 # =========================
 # Model loading - FIXED VERSION
 # =========================
@@ -345,29 +366,29 @@ def process_tiff_upload(uploaded_file, is_rgb: bool = False, is_thermal: bool = 
 
 
 # =========================
-# Display helpers - FIXED VERSION
+# Display helpers - ORIGINAL DIMENSIONS
 # =========================
 def display_rgb_image(img: np.ndarray, title: str):
-    """Display RGB image with title and large size."""
+    """Display RGB image with title in original dimensions."""
     st.markdown(f"**{title}**")
     display_img = np.transpose(np.clip(img, 0, 1), (1, 2, 0))
-    st.image(display_img, use_column_width=True, clamp=True, channels='RGB')
+    st.image(display_img, use_column_width=False, clamp=True, channels='RGB')
 
 
 def display_thermal_gray(img: np.ndarray, title: str):
-    """Display thermal grayscale image with title and large size."""
+    """Display thermal grayscale image with title in original dimensions."""
     st.markdown(f"**{title}**")
     gray = np.clip(img.squeeze(), 0, 1)
-    st.image(gray, use_column_width=True, clamp=True)
+    st.image(gray, use_column_width=False, clamp=True)
 
 
 def display_thermal_colored(img: np.ndarray, title: str, cmap_name: str):
-    """Display thermal image with colormap and large size."""
+    """Display thermal image with colormap in original dimensions."""
     st.markdown(f"**{title}**")
     base = np.clip(img.squeeze(), 0, 1)
     cmap = cm.get_cmap(cmap_name)
     colored = cmap(base)[..., :3]
-    st.image(colored, use_column_width=True, clamp=True)
+    st.image(colored, use_column_width=False, clamp=True)
 
 
 def display_metrics_card(psnr_val, ssim_val, rmse_val):
@@ -586,4 +607,18 @@ if st.button("Run Super-Resolution", use_container_width=True):
 
     st.divider()
 
-   
+    # ========= Download SR Image =========
+    st.markdown("<div class='section-title'>Download Super-Resolution Image</div>", unsafe_allow_html=True)
+    
+    sr_tiff_bytes = save_tiff(sr_thermal, "sr_thermal.tif")
+    
+    st.download_button(
+        label="Download SR Thermal (TIFF)",
+        data=sr_tiff_bytes,
+        file_name="sr_thermal_output.tif",
+        mime="image/tiff",
+        use_container_width=True
+    )
+    
+    st.divider()
+    st.info("Processing complete! You can now try with different images.")
