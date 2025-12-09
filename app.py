@@ -407,7 +407,7 @@ st.title("HLS SSL4EO Super-Resolution Demo")
 
 st.markdown("""
 <div class='upload-box'>
-    <div class='upload-title'>Upload HR Optical (3-band TIFF), LR Thermal (1-band TIFF), and optionally GT HR Thermal (1-band TIFF).</div>
+    <div class='upload-title'>Upload HR Optical (3-band TIFF), LR Thermal (1-band TIFF), and GT HR Thermal (1-band TIFF).</div>
     <div class='note-text'>Note: Assumes upscale factor=2 with aligned grids.</div>
 </div>
 """, unsafe_allow_html=True)
@@ -428,10 +428,7 @@ with st.sidebar:
     st.markdown("""
     1. **HR Optical**: 3-band TIFF (RGB) at high resolution
     2. **LR Thermal**: 1-band thermal TIFF at half resolution
-    3. **GT HR Thermal** (Optional): Ground truth thermal image
-    4. All images should be **aligned** (same spatial extent)
-    5. Model path: `models/hls_ssl4eo_best.pth`
-    6. Requires: `rasterio` library
+    3. **GT HR Thermal**: Ground truth thermal image
     """)
 
 # Main content area - File uploaders
@@ -457,7 +454,7 @@ with col_thermal:
 
 col_gt, _ = st.columns(2)
 with col_gt:
-    st.markdown("#### GT HR Thermal (Optional, 1-band TIFF)")
+    st.markdown("#### GT HR Thermal (1-band TIFF)")
     gt_thermal_upload = st.file_uploader(
         "Upload GT HR Thermal TIFF",
         type=['tif', 'tiff'],
