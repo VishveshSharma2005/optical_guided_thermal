@@ -63,14 +63,39 @@ st.markdown('''
         }
         .metric-value {
             font-size: 28px;
-            font-weight: bold;
-            color: #1f77b4;
+            font-weight: 900;
+            color: #0d47a1;
             margin: 10px 0;
         }
         .metric-label {
             font-size: 14px;
             color: #666;
             margin-bottom: 5px;
+        }
+        .upload-box {
+            background-color: #e3f2fd;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #1f77b4;
+        }
+        .upload-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f77b4;
+            margin-bottom: 8px;
+        }
+        .upload-text {
+            font-size: 15px;
+            color: #333;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+        .note-text {
+            font-size: 15px;
+            color: #d32f2f;
+            font-weight: 600;
+            margin-top: 8px;
         }
     </style>
 ''', unsafe_allow_html=True)
@@ -346,7 +371,7 @@ def display_thermal_colored(img: np.ndarray, title: str, cmap_name: str):
 
 
 def display_metrics_card(psnr_val, ssim_val, rmse_val):
-    """Display metrics in an attractive card layout - FIXED"""
+    """Display metrics in an attractive card layout - BOLD VALUES"""
     
     col1, col2, col3 = st.columns(3)
     
@@ -354,7 +379,7 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
         st.markdown("""
         <div class='metric-card'>
             <div class='metric-label'>PSNR (dB)</div>
-            <div class='metric-value'>{:.2f}</div>
+            <div class='metric-value'><b>{:.2f}</b></div>
         </div>
         """.format(psnr_val), unsafe_allow_html=True)
     
@@ -362,7 +387,7 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
         st.markdown("""
         <div class='metric-card'>
             <div class='metric-label'>SSIM</div>
-            <div class='metric-value'>{:.4f}</div>
+            <div class='metric-value'><b>{:.4f}</b></div>
         </div>
         """.format(ssim_val), unsafe_allow_html=True)
     
@@ -370,7 +395,7 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
         st.markdown("""
         <div class='metric-card'>
             <div class='metric-label'>RMSE</div>
-            <div class='metric-value'>{:.4f}</div>
+            <div class='metric-value'><b>{:.4f}</b></div>
         </div>
         """.format(rmse_val), unsafe_allow_html=True)
 
@@ -381,9 +406,9 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
 st.title("HLS SSL4EO Super-Resolution Demo")
 
 st.markdown("""
-<div style='background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-    <b>Upload</b> HR Optical (3-band TIFF), LR Thermal (1-band TIFF), and optionally GT HR Thermal (1-band TIFF).
-    <br><b>Note:</b> Assumes upscale factor=2 with aligned grids.
+<div class='upload-box'>
+    <div class='upload-title'>Upload HR Optical (3-band TIFF), LR Thermal (1-band TIFF), and optionally GT HR Thermal (1-band TIFF).</div>
+    <div class='note-text'>Note: Assumes upscale factor=2 with aligned grids.</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -594,4 +619,4 @@ if st.button("Run Super-Resolution", use_container_width=True):
         """.format(sr_thermal.shape[0], sr_thermal.shape[1]), unsafe_allow_html=True)
 
     st.divider()
-    st.info("✅ Processing complete! You can now try with different images.")
+    st.info("Processing complete! You can now try with different images.")
