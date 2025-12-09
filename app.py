@@ -278,15 +278,6 @@ def compute_metrics(pred: np.ndarray, target: np.ndarray):
     return psnr_val, ssim_val, rmse_val
 
 
-def bicubic_upscale(data: np.ndarray, scale: int = 2):
-    """Bicubic interpolation upscaling"""
-    data_tensor = torch.from_numpy(data).unsqueeze(0).float()
-    if data_tensor.ndim == 3:
-        data_tensor = data_tensor.unsqueeze(0)
-    upscaled = F.interpolate(data_tensor, scale_factor=scale, mode='bicubic', align_corners=False)
-    return np.clip(upscaled.squeeze().numpy(), 0, 1)
-
-
 def save_tiff(data: np.ndarray, filename: str):
     """Save numpy array as TIFF file in bytes"""
     temp_path = f"temp_{filename}"
@@ -554,11 +545,6 @@ if st.button("Run Super-Resolution", use_container_width=True):
         sr_thermal = np.clip(sr_thermal, 0, 1)
 
     progress_bar.progress(80)
-    
-    # Bicubic Interpolation
-    status_text.text("Computing bicubic interpolation...")
-    bicubic_thermal = bicubic_upscale(lr_thermal, scale=2)
-    
     status_text.text("Processing complete!")
     progress_bar.progress(100)
 
@@ -610,94 +596,14 @@ if st.button("Run Super-Resolution", use_container_width=True):
 
     st.divider()
 
-    # ========= Bicubic Comparison =========
-    st.markdown("<div class='section-title'>Bicubic Interpolation Comparison</div>", unsafe_allow_html=True)
-    
-    if gt_thermal is not None:
-        cols = st.columns(4)
-        with cols[0]:
-            display_thermal_gray(bicubic_thermal, "Bicubic Upscaled (Grayscale)")
-        with cols[1]:
-            display_thermal_gray(sr_thermal, "DualEDSR+ (Grayscale)")
-        with cols[2]:
-            display_thermal_gray(gt_thermal[0], "GT HR Thermal (Grayscale)")
-        with cols[3]:
-            st.markdown("**Comparison Info**")
-            st.info("Left: Bicubic Interpolation\nMiddle: DualEDSR+ (AI Model)\nRight: Ground Truth")
-    else:
-        cols = st.columns(3)
-        with cols[0]:
-            display_thermal_gray(bicubic_thermal, "Bicubic Upscaled (Grayscale)")
-        with cols[1]:
-            display_thermal_gray(sr_thermal, "DualEDSR+ (Grayscale)")
-        with cols[2]:
-            st.markdown("**Comparison Info**")
-            st.info("Left: Bicubic Interpolation\nRight: DualEDSR+ (AI Model)")
-
-    st.divider()
-
-    # ========= Bicubic Colored Comparison =========
-    st.markdown("<div class='section-title'>Bicubic Interpolation - Thermal with Colormap</div>", unsafe_allow_html=True)
-    
-    if gt_thermal is not None:
-        cols = st.columns(3)
-        with cols[0]:
-            display_thermal_colored(bicubic_thermal, f"Bicubic ({cmap})", cmap)
-        with cols[1]:
-            display_thermal_colored(sr_thermal, f"DualEDSR+ ({cmap})", cmap)
-        with cols[2]:
-            display_thermal_colored(gt_thermal[0], f"GT Thermal ({cmap})", cmap)
-    else:
-        cols = st.columns(2)
-        with cols[0]:
-            display_thermal_colored(bicubic_thermal, f"Bicubic ({cmap})", cmap)
-        with cols[1]:
-            display_thermal_colored(sr_thermal, f"DualEDSR+ ({cmap})", cmap)
-
-    st.divider()
-
     # ========= Metrics =========
     if gt_thermal is not None:
-        st.markdown("<div class='section-title'>Performance Metrics Comparison</div>", unsafe_allow_html=True)
-        
-        # DualEDSR+ Metrics
-        psnr_sr, ssim_sr, rmse_sr = compute_metrics(sr_thermal, gt_thermal[0])
-        
-        # Bicubic Metrics
-        psnr_bicubic, ssim_bicubic, rmse_bicubic = compute_metrics(bicubic_thermal, gt_thermal[0])
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("### DualEDSR+ (Deep Learning)")
-            display_metrics_card(psnr_sr, ssim_sr, rmse_sr)
-        
-        with col2:
-            st.markdown("### Bicubic Interpolation")
-            display_metrics_card(psnr_bicubic, ssim_bicubic, rmse_bicubic)
-        
-        # Improvement metrics
-        st.divider()
-        st.markdown("<div class='section-title'>Performance Improvement</div>", unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns(3)
-        
-        psnr_improvement = psnr_sr - psnr_bicubic
-        ssim_improvement = ssim_sr - ssim_bicubic
-        rmse_improvement = rmse_bicubic - rmse_sr
-        
-        with col1:
-            st.metric("PSNR Improvement (dB)", f"{psnr_improvement:+.2f}", delta_color="inverse")
-        
-        with col2:
-            st.metric("SSIM Improvement", f"{ssim_improvement:+.4f}", delta_color="off")
-        
-        with col3:
-            st.metric("RMSE Improvement (Lower is Better)", f"{rmse_improvement:+.4f}", delta_color="inverse")
-        
-        st.success("Metrics computed! DualEDSR+ vs Bicubic comparison complete!")
+        st.markdown("<div class='section-title'>Performance Metrics</div>", unsafe_allow_html=True)
+        psnr_val, ssim_val, rmse_val = compute_metrics(sr_thermal, gt_thermal[0])
+        display_metrics_card(psnr_val, ssim_val, rmse_val)
+        st.success("Metrics computed between SR and GT!")
     else:
-        st.info("Upload GT thermal image to see performance metrics comparison.")
+        st.info("Upload GT thermal image to compute metrics.")
 
     st.divider()
 
@@ -705,27 +611,14 @@ if st.button("Run Super-Resolution", use_container_width=True):
     st.markdown("<div class='section-title'>Download Super-Resolution Image</div>", unsafe_allow_html=True)
     
     sr_tiff_bytes = save_tiff(sr_thermal, "sr_thermal.tif")
-    bicubic_tiff_bytes = save_tiff(bicubic_thermal, "bicubic_thermal.tif")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.download_button(
-            label="Download SR Thermal (DualEDSR+) - TIFF",
-            data=sr_tiff_bytes,
-            file_name="sr_thermal_dualedsr_output.tif",
-            mime="image/tiff",
-            use_container_width=True
-        )
-    
-    with col2:
-        st.download_button(
-            label="Download Bicubic Upscaled - TIFF",
-            data=bicubic_tiff_bytes,
-            file_name="bicubic_thermal_output.tif",
-            mime="image/tiff",
-            use_container_width=True
-        )
+    st.download_button(
+        label="Download SR Thermal (TIFF)",
+        data=sr_tiff_bytes,
+        file_name="sr_thermal_output.tif",
+        mime="image/tiff",
+        use_container_width=True
+    )
     
     st.divider()
     st.info("Processing complete! You can now try with different images.")
