@@ -18,7 +18,7 @@ from rasterio.warp import reproject
 # Page Configuration
 # =========================
 st.set_page_config(
-    page_title="HLS SSL4EO Super-Resolution",
+    page_title="DualEDSR+ Super-Resolution",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -403,7 +403,7 @@ def display_metrics_card(psnr_val, ssim_val, rmse_val):
 # =========================
 # Streamlit App - MAIN
 # =========================
-st.title("HLS SSL4EO Super-Resolution Demo")
+st.title("DualEDSR+ Super-Resolution Demo")
 
 st.markdown("""
 <div class='upload-box'>
